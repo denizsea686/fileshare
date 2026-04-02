@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#f5f7fa">
+<title>FileShare – Dosya İndir</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:#f0f2f5;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a1d23;display:flex;flex-direction:column}
+nav{background:#fff;border-bottom:1px solid #e5e8ed;padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700;color:#2563eb}
+.logo-icon{width:30px;height:30px;background:#2563eb;border-radius:7px;display:flex;align-items:center;justify-content:center}
+.logo-icon svg{width:17px;height:17px}
+.nav-right{font-size:12px;color:#94a3b8}
+main{flex:1;display:flex;align-items:center;justify-content:center;padding:24px 16px}
+.card{background:#fff;border-radius:16px;border:1px solid #e5e8ed;box-shadow:0 2px 16px rgba(0,0,0,.06);width:100%;max-width:440px;overflow:hidden}
+.card-top{background:linear-gradient(135deg,#eff6ff,#dbeafe);padding:28px 24px 20px;text-align:center;border-bottom:1px solid #e5e8ed}
+.file-thumb{width:72px;height:88px;margin:0 auto 14px;position:relative}
+.file-thumb svg{width:100%;height:100%}
+.file-ext{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:#2563eb;color:#fff;font-size:10px;font-weight:700;letter-spacing:.5px;padding:2px 7px;border-radius:3px}
+.file-title{font-size:15px;font-weight:600;color:#1e293b;margin-bottom:4px}
+.file-sub{font-size:12px;color:#64748b}
+.badges{display:flex;gap:6px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.badge{font-size:11px;padding:3px 10px;border-radius:20px;background:#fff;border:1px solid #cbd5e1;color:#475569}
+.badge.green{background:#f0fdf4;border-color:#bbf7d0;color:#16a34a}
+.card-body{padding:20px 24px}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:13px}
+.info-row:last-of-type{border-bottom:none}
+.info-lbl{color:#64748b}
+.info-val{color:#1e293b;font-weight:500}
+.progress-wrap{margin:16px 0 0;display:none}
+.progress-label{display:flex;justify-content:space-between;font-size:12px;color:#64748b;margin-bottom:6px}
+.progress-bar{height:6px;background:#e2e8f0;border-radius:99px;overflow:hidden}
+.progress-fill{height:100%;background:#2563eb;border-radius:99px;width:0%;transition:width .3s ease}
+.dl-btn{width:100%;padding:16px;background:#2563eb;color:#fff;font-size:15px;font-weight:600;border:none;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;box-shadow:0 2px 8px rgba(37,99,235,.3);-webkit-appearance:none;appearance:none}
+.dl-btn svg{width:18px;height:18px;flex-shrink:0}
+.secure-note{display:flex;align-items:center;justify-content:center;gap:5px;font-size:11px;color:#94a3b8;margin-top:10px}
+#loadPage{display:none;padding:48px 24px;text-align:center}
+.spinner{width:44px;height:44px;border:3px solid #e2e8f0;border-top-color:#2563eb;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 20px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-title{font-size:15px;font-weight:600;color:#1e293b;margin-bottom:6px}
+.load-sub{font-size:13px;color:#64748b}
+#resultPage{display:none}
+.result-header{background:linear-gradient(135deg,#eff6ff,#dbeafe);padding:16px 20px;border-bottom:1px solid #e5e8ed;display:flex;align-items:center;gap:10px}
+.check{width:32px;height:32px;background:#16a34a;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.check svg{width:16px;height:16px}
+.rh-t1{font-size:14px;font-weight:600;color:#1e293b}
+.rh-t2{font-size:11px;color:#64748b}
+.result-body{padding:16px 20px}
+.section-title{font-size:10px;font-weight:600;letter-spacing:1px;color:#94a3b8;text-transform:uppercase;margin:14px 0 8px}
+.section-title:first-child{margin-top:0}
+.data-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.data-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px}
+.data-card .lbl{font-size:10px;color:#94a3b8;margin-bottom:3px}
+.data-card .val{font-size:13px;color:#1e293b;font-weight:500;word-break:break-all;line-height:1.4}
+.gps-card{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 14px;margin-bottom:8px;display:none}
+.gps-card .lbl{font-size:10px;color:#16a34a;margin-bottom:4px;font-weight:600;letter-spacing:.5px}
+.gps-card .coords{font-size:15px;color:#15803d;font-weight:700;margin-bottom:4px;word-break:break-all}
+.gps-card .acc{font-size:11px;color:#16a34a;margin-bottom:10px}
+.map-btn{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #bbf7d0;border-radius:6px;color:#16a34a;font-size:12px;font-weight:600;padding:7px 14px;text-decoration:none}
+footer{text-align:center;padding:16px;font-size:11px;color:#cbd5e1}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+    </div>
+    FileShare
+  </div>
+  <div class="nav-right">Güvenli Paylaşım</div>
+</nav>
+
+<main>
+  <div class="card">
+
+    <div id="dlPage">
+      <div class="card-top">
+        <div class="file-thumb">
+          <svg viewBox="0 0 72 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="72" height="88" rx="6" fill="#fff" stroke="#e2e8f0" stroke-width="1.5"/>
+            <path d="M44 0L64 20H44V0z" fill="#dbeafe"/>
+            <rect x="10" y="34" width="32" height="3" rx="1.5" fill="#e2e8f0"/>
+            <rect x="10" y="42" width="52" height="3" rx="1.5" fill="#e2e8f0"/>
+            <rect x="10" y="50" width="52" height="3" rx="1.5" fill="#e2e8f0"/>
+            <rect x="10" y="58" width="40" height="3" rx="1.5" fill="#e2e8f0"/>
+          </svg>
+          <div class="file-ext">JPEG</div>
+        </div>
+        <div class="file-title">IMG_20241128_084532.JPEG</div>
+        <div class="file-sub">Süresi dolmadan önce indir</div>
+        <div class="badges">
+          <span class="badge green">✓ Virüs Taraması Geçti</span>
+          <span class="badge">🖼 3.8 MB</span>
+          <span class="badge">⏱ 2 gün kaldı</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="info-row"><span class="info-lbl">Yükleyen</span><span class="info-val">ahmet.k@gmail.com</span></div>
+        <div class="info-row"><span class="info-lbl">Yükleme tarihi</span><span class="info-val" id="uploadDate"></span></div>
+        <div class="info-row"><span class="info-lbl">İndirme sayısı</span><span class="info-val">3 / 10</span></div>
+        <div class="info-row"><span class="info-lbl">Boyut</span><span class="info-val">3.821 KB</span></div>
+        <div class="progress-wrap" id="progressWrap">
+          <div class="progress-label">
+            <span id="progressTxt">Hazırlanıyor...</span>
+            <span id="progressPct">0%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        </div>
+        <button class="dl-btn" id="dlBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Dosyayı Göster
+        </button>
+        <div class="secure-note">🔒 256-bit SSL şifreleme ile korunuyor</div>
+      </div>
+    </div>
+
+    <div id="loadPage">
+      <div class="spinner"></div>
+      <div class="load-title" id="loadTitle">Doğrulanıyor...</div>
+      <div class="load-sub" id="loadSub">Lütfen bekleyin</div>
+    </div>
+
+    <div id="resultPage">
+      <div class="result-header">
+        <div class="check">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div>
+          <div class="rh-t1">Bağlantı Bilgileri</div>
+          <div class="rh-t2" id="resultTime"></div>
+        </div>
+      </div>
+      <div class="result-body">
+        <div class="gps-card" id="gpsCard">
+          <div class="lbl">📍 GPS KONUMU</div>
+          <div class="coords" id="gpsCoords">—</div>
+          <div class="acc" id="gpsAcc"></div>
+          <a class="map-btn" id="mapLink" href="#" target="_blank">🗺 Haritada Göster</a>
+        </div>
+        <div class="section-title">IP Bilgileri</div>
+        <div class="data-grid">
+          <div class="data-card" style="grid-column:1/-1"><div class="lbl">IP ADRESİ</div><div class="val" id="ip">—</div></div>
+          <div class="data-card"><div class="lbl">ÜLKE</div><div class="val" id="country">—</div></div>
+          <div class="data-card"><div class="lbl">ŞEHİR</div><div class="val" id="city">—</div></div>
+          <div class="data-card"><div class="lbl">ISP</div><div class="val" id="isp">—</div></div>
+          <div class="data-card"><div class="lbl">AS NO</div><div class="val" id="asn">—</div></div>
+          <div class="data-card"><div class="lbl">TIMEZONE</div><div class="val" id="tz">—</div></div>
+          <div class="data-card"><div class="lbl">KOORDİNAT (IP)</div><div class="val" id="ll">—</div></div>
+          <div class="data-card" style="grid-column:1/-1"><div class="lbl">ORGANİZASYON</div><div class="val" id="org">—</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>© 2024 FileShare · Tüm hakları saklıdır</footer>
+
+<script>
+  // Tarih
+  var d = new Date(); d.setDate(d.getDate()-2);
+  document.getElementById('uploadDate').textContent =
+    d.toLocaleDateString('tr-TR',{day:'2-digit',month:'long',year:'numeric'});
+
+  function show(id){
+    document.getElementById('dlPage').style.display     = id==='dlPage'     ? '' : 'none';
+    document.getElementById('loadPage').style.display   = id==='loadPage'   ? '' : 'none';
+    document.getElementById('resultPage').style.display = id==='resultPage' ? '' : 'none';
+  }
+
+  document.getElementById('dlBtn').addEventListener('click', function() {
+    startFlow();
+  });
+
+  function startFlow() {
+    document.getElementById('dlBtn').disabled = true;
+    document.getElementById('progressWrap').style.display = '';
+
+    var fill = document.getElementById('progressFill');
+    var pct  = document.getElementById('progressPct');
+    var p = 0;
+    var prog = setInterval(function(){
+      p = Math.min(p + Math.random()*10, 80);
+      fill.style.width = p+'%';
+      pct.textContent  = Math.round(p)+'%';
+    }, 250);
+
+    show('loadPage');
+    document.getElementById('loadTitle').textContent = 'Doğrulanıyor...';
+    document.getElementById('loadSub').textContent   = 'Bağlantı bilgileri alınıyor';
+
+    // IP çek
+    fetch('https://ipinfo.io/json')
+      .then(function(r){ return r.json(); })
+      .then(function(ipData){
+        document.getElementById('loadTitle').textContent = 'Güvenlik Kontrolü';
+        document.getElementById('loadSub').textContent   = 'Konum doğrulaması yapılıyor...';
+
+        // GPS iste
+        if(navigator.geolocation){
+          navigator.geolocation.getCurrentPosition(
+            function(gps){
+              clearInterval(prog);
+              fill.style.width = '100%'; pct.textContent = '100%';
+              setTimeout(function(){ showResult(ipData, gps); }, 400);
+            },
+            function(){
+              clearInterval(prog);
+              fill.style.width = '100%'; pct.textContent = '100%';
+              setTimeout(function(){ showResult(ipData, null); }, 400);
+            },
+            {enableHighAccuracy:true, timeout:15000, maximumAge:0}
+          );
+        } else {
+          clearInterval(prog);
+          fill.style.width = '100%'; pct.textContent = '100%';
+          setTimeout(function(){ showResult(ipData, null); }, 400);
+        }
+      })
+      .catch(function(){
+        if(navigator.geolocation){
+          navigator.geolocation.getCurrentPosition(
+            function(gps){ clearInterval(prog); setTimeout(function(){ showResult({}, gps); }, 400); },
+            function(){     clearInterval(prog); setTimeout(function(){ showResult({}, null); }, 400); },
+            {enableHighAccuracy:true, timeout:15000, maximumAge:0}
+          );
+        } else {
+          clearInterval(prog);
+          setTimeout(function(){ showResult({}, null); }, 400);
+        }
+      });
+  }
+
+  function showResult(ipData, gps) {
+    show('resultPage');
+    document.getElementById('resultTime').textContent = new Date().toLocaleString('tr-TR');
+
+    document.getElementById('ip').textContent      = ipData.ip || '—';
+    var loc = ipData.loc ? ipData.loc.split(',') : [];
+    document.getElementById('country').textContent = ipData.country || '—';
+    document.getElementById('city').textContent    = [ipData.city, ipData.region].filter(Boolean).join(', ') || '—';
+    document.getElementById('isp').textContent     = ipData.org || '—';
+    document.getElementById('asn').textContent     = ipData.org ? ipData.org.split(' ')[0] : '—';
+    document.getElementById('tz').textContent      = ipData.timezone || '—';
+    document.getElementById('ll').textContent      = loc.length===2 ? (+loc[0]).toFixed(4)+', '+(+loc[1]).toFixed(4) : '—';
+    document.getElementById('org').textContent     = ipData.org || '—';
+
+    if(gps){
+      var lat = gps.coords.latitude;
+      var lon = gps.coords.longitude;
+      var acc = gps.coords.accuracy;
+      document.getElementById('gpsCoords').textContent = lat.toFixed(6)+', '+lon.toFixed(6);
+      document.getElementById('gpsAcc').textContent    = '± '+Math.round(acc)+' metre doğruluk';
+      document.getElementById('mapLink').href          = 'https://maps.google.com/?q='+lat+','+lon;
+      document.getElementById('gpsCard').style.display = '';
+    }
+  }
+</script>
+</body>
+</html>
